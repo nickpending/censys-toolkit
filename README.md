@@ -103,7 +103,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - [Censys](https://censys.io/) for providing the API
-- [Censys-Python] (https://github.com/censys/censys-python) The Censys Python library maintainers
+- [Censys-Python](https://github.com/censys/censys-python) The Censys Python library maintainers
 
 ## Contact
 
