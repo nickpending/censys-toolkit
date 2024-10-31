@@ -8,9 +8,13 @@ This repository contains a collection of command-line utilities designed to exte
 
 ## Installation
 
+### Requirements
+- Python 3.8 or higher
+- Censys API credentials
+
 1. Clone the repository:
 ```bash
-git clone https://github.com/nickpending/censys-toolkit.git
+git clone https://github.com/yourusername/censys-toolkit.git
 cd censys-toolkit
 ```
 
