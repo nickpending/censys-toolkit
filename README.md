@@ -1,6 +1,6 @@
 # censys-toolkit
 
-Power tools for enhancing Censys searches and data analysis workflows.
+Command-line utilities to support Censys reconnaissance and data gathering 
 
 ## Overview
 
