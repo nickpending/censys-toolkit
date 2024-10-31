@@ -35,10 +35,10 @@ export CENSYS_API_SECRET="your_api_secret"
 
 ### censyspy
 
-A fast and efficient domain reconnaissance tool that discovers subdomains and SSL/TLS certificates using Censys Search API.
+A fast (depending on the domain you choose) and efficient reconnaissance tool that discovers FQDNs using Censys Search API
 
 #### Features
-- Discovers domains through both DNS records and SSL/TLS certificates
+- Discovers FQDNs through both DNS records and SSL/TLS certificates
 - Combines forward and reverse DNS lookups
 - Outputs results in JSON format for easy parsing
 - Configurable search depth and result limits
