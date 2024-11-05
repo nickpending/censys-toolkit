@@ -1,5 +1,5 @@
 # censys-toolkit
-Command-line utilities to support Censys reconnaissance and data gathering 
+Command-line utilities to support Censys reconnaissance and data gathering
 
 ## Overview
 This repository contains a collection of command-line utilities designed to extend and streamline Censys operations. Each tool is focused on specific use cases to help security researchers, penetration testers, and system administrators efficiently gather and analyze data from Censys.
@@ -8,6 +8,7 @@ This repository contains a collection of command-line utilities designed to exte
 ### Requirements
 - Python 3.8 or higher
 - Censys API credentials
+- python-dotenv
 
 1. Clone the repository:
 ```bash
@@ -21,15 +22,27 @@ pip install -r requirements.txt
 ```
 
 3. Configure Censys credentials:
-- Set your Censys API ID and API Secret as environment variables:
+
+You can configure your Censys API credentials using either method:
+
+a. Using a `.env` file (recommended):
+- Copy the example environment file:
+  ```bash
+  cp .env-example .env
+  ```
+- Edit `.env` and add your credentials:
+  ```
+  CENSYS_API_ID=your_api_id_here
+  CENSYS_API_SECRET=your_api_secret_here
+  ```
+
+b. Using environment variables:
 ```bash
 export CENSYS_API_ID="your_api_id"
 export CENSYS_API_SECRET="your_api_secret"
 ```
-- Or use the Censys configuration file: `~/.config/censys/censys.cfg`
 
 ## Tools
-
 ### censyspy
 A fast and efficient reconnaissance tool that discovers FQDNs using Censys Search API
 
@@ -39,6 +52,7 @@ A fast and efficient reconnaissance tool that discovers FQDNs using Censys Searc
 - Outputs results in JSON format for easy parsing
 - Configurable search depth and result limits
 - Flexible data collection timeframes (1, 3, 7 days, or all historical data)
+- Supports multiple credential configuration methods
 
 #### Usage
 ```bash
@@ -47,22 +61,18 @@ censyspy --data-type both --domain example.com --output results.json
 
 #### Options
 ```
-  -h, --help            show this help message and exit
-  --data-type {dns,certificate,both}
-                        Type of data to fetch
-  --domain DOMAIN       Domain to filter results (e.g., example.com)
-  --days {1,3,7,all}    Filter results by last update time (1, 3, 7 days, or all)
-  --page-size PAGE_SIZE
-                        Number of results per page (max 100)
-  --max-pages MAX_PAGES
-                        Maximum number of pages to process. Use -1 for all pages.
-  --output OUTPUT       Output file for JSON results
-  --debug              Enable debug mode
-  --json               Print full JSON output to console
+ -h, --help                           show this help message and exit
+ --data-type {dns,certificate,both}   Type of data to fetch
+ --domain DOMAIN                      Domain to filter results (e.g., example.com)
+ --days {1,3,7,all}                  Filter results by last update time (1, 3, 7 days, or all)
+ --page-size PAGE_SIZE               Number of results per page (max 100)
+ --max-pages MAX_PAGES               Maximum number of pages to process. Use -1 for all pages.
+ --output OUTPUT                     Output file for JSON results
+ --debug                            Enable debug mode
+ --json                             Print full JSON output to console
 ```
 
 #### Examples
-
 1. Fetch complete historical dataset:
 ```bash
 censyspy --data-type both --domain example.com --days all --output example.com.json
@@ -114,6 +124,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 - [Censys](https://censys.io/) for providing the API
 - [Censys-Python](https://github.com/censys/censys-python) The Censys Python library maintainers
+- [python-dotenv](https://github.com/theskumar/python-dotenv) for environment variable management
 
 ## Contact
 Project Link: https://github.com/nickpending/censys-toolkit
