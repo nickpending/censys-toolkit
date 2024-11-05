@@ -6,14 +6,17 @@ import argparse
 import json
 import logging
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(message)s'
 )
 logger = logging.getLogger(__name__)
-
-
 
 DataTypes = Union[Dict[str, Set[str]], Dict[str, Dict[str, List[str]]]]
 
@@ -64,17 +67,33 @@ class CensysDataFetcher:
         self._hosts_client = None
         self._certs_client = None
         self.timeout = 300  # 5 minute timeout
+        
+        # Load Censys credentials from environment variables
+        self.api_id = os.getenv('CENSYS_API_ID')
+        self.api_secret = os.getenv('CENSYS_API_SECRET')
+        
+        if not self.api_id or not self.api_secret:
+            raise ValueError("Censys API credentials not found in environment variables. "
+                           "Please ensure CENSYS_API_ID and CENSYS_API_SECRET are set in .env file.")
 
     @property
     def hosts_client(self):
         if not self._hosts_client:
-            self._hosts_client = CensysHosts(timeout=self.timeout)
+            self._hosts_client = CensysHosts(
+                api_id=self.api_id,
+                api_secret=self.api_secret,
+                timeout=self.timeout
+            )
         return self._hosts_client
 
     @property
     def certs_client(self):
         if not self._certs_client:
-            self._certs_client = CensysCerts(timeout=self.timeout)
+            self._certs_client = CensysCerts(
+                api_id=self.api_id,
+                api_secret=self.api_secret,
+                timeout=self.timeout
+            )
         return self._certs_client
 
     def _build_query(self, data_type: str, domain: Optional[str], days: Optional[str]) -> tuple[str, List[str]]:
@@ -220,7 +239,6 @@ def format_results(data: DataTypes, max_display: int = 10) -> str:
     return "\n".join(output)
 
 def main():
-
     print_banner()
     
     args = parse_arguments()
@@ -228,33 +246,39 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
         logger.debug("Command line arguments: %s", vars(args))
+    
+    try:
+        fetcher = CensysDataFetcher(debug=args.debug)
+        
+        # Fetch data based on type
+        if args.data_type == 'both':
+            result = {
+                'dns': {dns: list(types) for dns, types in 
+                       fetcher.fetch_data('dns', args.domain, args.days, args.page_size, args.max_pages).items()},
+                'certificate': {cert: list(types) for cert, types in 
+                              fetcher.fetch_data('certificate', args.domain, args.days, args.page_size, args.max_pages).items()}
+            }
+        else:
+            collected_data = fetcher.fetch_data(args.data_type, args.domain, args.days, args.page_size, args.max_pages)
+            result = {name: list(types) for name, types in collected_data.items()}
 
-    fetcher = CensysDataFetcher(debug=args.debug)
+        # Write results to file
+        with open(args.output, 'w') as f:
+            json.dump(result, f, indent=2)
+        logger.info(f"Results written to {args.output}")
 
-    # Fetch data based on type
-    if args.data_type == 'both':
-        result = {
-            'dns': {dns: list(types) for dns, types in 
-                   fetcher.fetch_data('dns', args.domain, args.days, args.page_size, args.max_pages).items()},
-            'certificate': {cert: list(types) for cert, types in 
-                          fetcher.fetch_data('certificate', args.domain, args.days, args.page_size, args.max_pages).items()}
-        }
-    else:
-        collected_data = fetcher.fetch_data(args.data_type, args.domain, args.days, args.page_size, args.max_pages)
-        result = {name: list(types) for name, types in collected_data.items()}
-
-    # Write results to file
-    with open(args.output, 'w') as f:
-        json.dump(result, f, indent=2)
-    logger.info(f"Results written to {args.output}")
-
-    # Handle output display - only print once
-    if args.json or args.debug:
-        print(json.dumps(result, indent=2))
-    else:
-        print("\nCollected data summary:")
-        print(format_results(result))
+        # Handle output display
+        if args.json or args.debug:
+            print(json.dumps(result, indent=2))
+        else:
+            print("\nCollected data summary:")
+            print(format_results(result))
+            
+    except Exception as e:
+        logger.error(f"Error during execution: {str(e)}")
+        if args.debug:
+            logger.exception("Detailed error information:")
+        exit(1)
 
 if __name__ == "__main__":
     main()
-
