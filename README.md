@@ -1,13 +1,10 @@
 # censys-toolkit
-
 Command-line utilities to support Censys reconnaissance and data gathering 
 
 ## Overview
-
 This repository contains a collection of command-line utilities designed to extend and streamline Censys operations. Each tool is focused on specific use cases to help security researchers, penetration testers, and system administrators efficiently gather and analyze data from Censys.
 
 ## Installation
-
 ### Requirements
 - Python 3.8 or higher
 - Censys API credentials
@@ -34,40 +31,56 @@ export CENSYS_API_SECRET="your_api_secret"
 ## Tools
 
 ### censyspy
-
-A fast (depending on the domain you choose) and efficient reconnaissance tool that discovers FQDNs using Censys Search API
+A fast and efficient reconnaissance tool that discovers FQDNs using Censys Search API
 
 #### Features
 - Discovers FQDNs through both DNS records and SSL/TLS certificates
 - Combines forward and reverse DNS lookups
 - Outputs results in JSON format for easy parsing
 - Configurable search depth and result limits
+- Flexible data collection timeframes (1, 3, 7 days, or all historical data)
 
 #### Usage
 ```bash
-python censyspy.py --data-type both --domain example.com --output results.json
+censyspy --data-type both --domain example.com --output results.json
 ```
 
 #### Options
 ```
---data-type     Type of data to fetch (dns, certificate, or both)
---domain        Target domain to search
---page-size     Number of results per page (default: 100)
---max-pages     Maximum number of pages to process (-1 for all)
---output        Output file for JSON results
---debug         Enable debug mode
---json          Print full JSON output to console
+  -h, --help            show this help message and exit
+  --data-type {dns,certificate,both}
+                        Type of data to fetch
+  --domain DOMAIN       Domain to filter results (e.g., example.com)
+  --days {1,3,7,all}    Filter results by last update time (1, 3, 7 days, or all)
+  --page-size PAGE_SIZE
+                        Number of results per page (max 100)
+  --max-pages MAX_PAGES
+                        Maximum number of pages to process. Use -1 for all pages.
+  --output OUTPUT       Output file for JSON results
+  --debug              Enable debug mode
+  --json               Print full JSON output to console
 ```
 
-#### Example
+#### Examples
+
+1. Fetch complete historical dataset:
 ```bash
-python censyspy.py --data-type both --domain example.com --output example.com.json
+censyspy --data-type both --domain example.com --days all --output example.com.json
+```
+
+2. Fetch only the last 24 hours of data:
+```bash
+censyspy --data-type both --domain example.com --days 1 --output example.com-daily.json
+```
+
+3. Fetch the last week of certificate data:
+```bash
+censyspy --data-type certificate --domain example.com --days 7 --output example.com-certs.json
 ```
 
 Sample output:
 ```
 Results written to example.com.json
-
 Collected data summary:
 DNS Data:
 1. www.example.com (forward)
@@ -87,7 +100,6 @@ CERTIFICATE Data:
 ```
 
 ## Contributing
-
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
 1. Fork the repository
@@ -97,14 +109,11 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 5. Open a Pull Request
 
 ## License
-
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
-
 - [Censys](https://censys.io/) for providing the API
 - [Censys-Python](https://github.com/censys/censys-python) The Censys Python library maintainers
 
 ## Contact
-
 Project Link: https://github.com/nickpending/censys-toolkit
