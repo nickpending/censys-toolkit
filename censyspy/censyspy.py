@@ -101,7 +101,8 @@ class CensysDataFetcher:
         date_filter = get_date_filter(days)
     
         if data_type == 'dns':
-            base_query = f'dns.names: *.{domain} or dns.names: {domain}' if domain else 'dns.names: *'
+            # Search forward and reverse fields for our domain
+            base_query = f'(dns.names: {domain} or dns.reverse_dns.names: {domain})'
             fields = ['ip', 'dns.names', 'dns.reverse_dns.names']
             date_field = 'last_updated_at'
         else:  # certificate
