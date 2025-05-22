@@ -48,38 +48,46 @@ The repository is organized according to a layered architecture pattern:
 - rich>=13.7.1 (Improved terminal output)
 - pydantic>=2.10.6 (Data validation)
 
-### Development Environment
-We standardize on [uv](https://github.com/astral-sh/uv) for Python package management and virtual environment handling, as it offers significant performance improvements and better dependency resolution:
+### Quick Start (Recommended)
+This project uses [uv](https://github.com/astral-sh/uv) for fast, reliable Python package management:
 
-1. Clone the repository:
+```bash
+# Clone and set up in one go
+git clone https://github.com/nickpending/censys-toolkit.git
+cd censys-toolkit
+./scripts/uv_manage.sh setup
+
+# Activate environment and test
+source .venv/bin/activate  # On Unix/Mac
+censyspy --help
+```
+
+### Development Environment  
+For development work, we standardize on [uv](https://github.com/astral-sh/uv) for package management and virtual environment handling:
+
+1. **Install uv** (if not already installed):
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# or
+pip install uv
+```
+
+2. **Clone and set up**:
 ```bash
 git clone https://github.com/nickpending/censys-toolkit.git
 cd censys-toolkit
+./scripts/uv_manage.sh setup    # Create venv and install dependencies
+./scripts/uv_manage.sh dev      # Install development dependencies
 ```
 
-2. Set up development environment with uv:
-```bash
-# Install uv if you don't have it yet
-pip install uv
-
-# Use the management script to set up the environment
-./scripts/uv_manage.sh setup  # Create virtual environment and install dependencies
-./scripts/uv_manage.sh dev    # Install development dependencies
-```
-
-3. Verify installation:
+3. **Verify installation**:
 ```bash
 # Activate virtual environment
-# On Unix/Mac:
-source .venv/bin/activate
-# On Windows:
-.venv\Scripts\activate
+source .venv/bin/activate       # Unix/Mac
+# .venv\Scripts\activate        # Windows
 
-# Run the main application
+# Test the application
 censyspy --help
-
-# Alternative: Use uv run without activating the environment
-uv run censyspy --help
 ```
 
 #### Standard Development Workflow

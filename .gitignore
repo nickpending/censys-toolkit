@@ -29,7 +29,6 @@ cov.xml
 
 # UV package manager
 .uv/
-uv.lock
 
 # Archive directory (preserved old code)
 archive/
