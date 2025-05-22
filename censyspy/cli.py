@@ -18,7 +18,7 @@ from censys.common.exceptions import CensysUnauthorizedException, CensysRateLimi
 from dotenv import load_dotenv
 from importlib.metadata import version
 
-from censyspy.formatter import format_console_summary, format_results, OutputFormat
+from censyspy.formatter import format_console_summary, format_results, normalize_format_type, parse_json_file
 from censyspy.integration import fetch_and_process_domains
 from censyspy.masterlist import read_master_list, update_master_list, UpdateMode
 from censyspy.models import CertificateMatch, DNSMatch, Domain
@@ -159,18 +159,29 @@ def collect(
     logger = logging.getLogger(__name__)
     
     try:
-        # Fetch and process domains with formatting
+        # Fetch and process domains ONCE
         logger.info(f"Starting domain collection for {domain}")
-        formatted_output = fetch_and_process_domains(
+        results_dict = fetch_and_process_domains(
             domain=domain,
             data_type=data_type,
             days=days,
             page_size=page_size,
             max_pages=max_pages,
             expand_wildcards=True,
-            format_output=True,
-            output_format=format
+            format_output=False
         )
+        
+        # Convert the dictionary to lists for both file output and console summary
+        dns_matches = []
+        cert_matches = []
+        for domain_name, match_obj in results_dict.items():
+            if isinstance(match_obj, DNSMatch):
+                dns_matches.append(match_obj)
+            elif isinstance(match_obj, CertificateMatch):
+                cert_matches.append(match_obj)
+        
+        # Format the results for file output
+        formatted_output = format_results(dns_matches, cert_matches, format_type=normalize_format_type(format))
         
         # Save formatted output to file
         if format.lower() == "json":
@@ -183,26 +194,6 @@ def collect(
             write_text_file(lines, output)
         
         logger.info(f"Results saved to {output}")
-        
-        # Get unformatted results for console summary
-        results_dict = fetch_and_process_domains(
-            domain=domain,
-            data_type=data_type,
-            days=days,
-            page_size=page_size,
-            max_pages=max_pages,
-            expand_wildcards=True,
-            format_output=False
-        )
-        
-        # Convert the dictionary to lists for the summary formatter
-        dns_matches = []
-        cert_matches = []
-        for domain_name, match_obj in results_dict.items():
-            if isinstance(match_obj, DNSMatch):
-                dns_matches.append(match_obj)
-            elif isinstance(match_obj, CertificateMatch):
-                cert_matches.append(match_obj)
         
         # Display summary in console
         if not quiet:
@@ -273,17 +264,21 @@ def update_master(
     """
     Update a master domain list with new discoveries.
     
-    This command takes the results of a domain collection operation and updates
-    a master list of domains. The master list is a text file with one domain per line.
-    Two update modes are supported:
+    This command takes domain data from either JSON or text files and updates
+    a master list of domains. The master list is saved as a text file with one domain per line.
     
+    Source files can be:
+    - JSON files from collect command output
+    - Text files with one domain per line
+    
+    Two update modes are supported:
     - update: Merge new domains with the existing master list (default)
     - replace: Replace the entire master list with new domains
     
     \b
     Examples:
         censyspy update-master --source results.json --master master-domains.txt
-        censyspy update-master --source results.json --master master-domains.txt --mode replace
+        censyspy update-master --source domains.txt --master master-domains.txt --mode replace
     """
     # Set up logging based on context options
     debug = ctx.obj.get('DEBUG', False)
@@ -314,27 +309,11 @@ def update_master(
         logger.info(f"Reading domain data from {source}")
         
         if source_extension == ".json":
-            # Handle JSON source files
-            with open(source, 'r') as f:
-                data = json.load(f)
-            
-            # Handle different JSON formats
-            if isinstance(data, list):
-                # Assume list of domain strings
-                for domain_str in data:
-                    try:
-                        new_domains.append(Domain(domain_str))
-                    except ValueError as e:
-                        logger.warning(f"Skipping invalid domain '{domain_str}': {str(e)}")
-            elif isinstance(data, dict):
-                # Assume dictionary with domains as keys
-                for domain_str in data.keys():
-                    try:
-                        new_domains.append(Domain(domain_str))
-                    except ValueError as e:
-                        logger.warning(f"Skipping invalid domain '{domain_str}': {str(e)}")
-            else:
-                raise ValueError(f"Unsupported JSON format in {source}")
+            # Use the unified JSON parsing function from formatter
+            try:
+                new_domains = parse_json_file(source)
+            except ValueError as e:
+                raise ValueError(f"Error parsing JSON file: {e}")
                 
         elif source_extension in (".txt", ".list", ""):
             # Handle text file with one domain per line

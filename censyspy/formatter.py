@@ -19,7 +19,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol, Type, Union, cast
 
-from censyspy.models import CertificateMatch, DNSMatch, SerializationFormat, serialize
+from censyspy.models import CertificateMatch, DNSMatch, Domain, SerializationFormat, serialize
 
 
 class OutputFormat(str, Enum):
@@ -503,3 +503,106 @@ def format_console_summary(
     lines.append("=" * 50)
     
     return "\n".join(lines)
+
+
+def parse_results(json_data: Union[str, Dict[str, Any]]) -> List[Domain]:
+    """
+    Parse JSON data from collect command output back into Domain objects.
+    
+    This function parses ONLY the structured JSON format produced by the
+    collect command. It extracts domain names from the data array.
+    
+    Args:
+        json_data: JSON data as string or dictionary. Expected format:
+                  {
+                    "format": "unified",
+                    "total_matches": 123,
+                    "dns_matches": 45,
+                    "certificate_matches": 78,  
+                    "data": [
+                      {"domain": "example.com", "sources": [...], ...},
+                      ...
+                    ]
+                  }
+    
+    Returns:
+        List of Domain objects extracted from the JSON data
+        
+    Raises:
+        ValueError: If JSON format is invalid or not the expected structured format
+        json.JSONDecodeError: If json_data string is not valid JSON
+        
+    Examples:
+        >>> json_str = '{"format": "unified", "data": [{"domain": "example.com"}]}'
+        >>> domains = parse_results(json_str)
+        >>> len(domains)
+        1
+        >>> domains[0].name
+        'example.com'
+    """
+    # Parse JSON string if needed
+    if isinstance(json_data, str):
+        try:
+            data = json.loads(json_data)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON format: {e}")
+    else:
+        data = json_data
+    
+    # Validate this is a dictionary with our expected structure
+    if not isinstance(data, dict):
+        raise ValueError("JSON must be a dictionary with structured format from collect command")
+    
+    if 'data' not in data:
+        raise ValueError("JSON must contain 'data' field with domain information")
+    
+    if not isinstance(data['data'], list):
+        raise ValueError("JSON 'data' field must be a list of domain records")
+    
+    domains = []
+    
+    # Parse the structured format from collect command
+    for item in data['data']:
+        if isinstance(item, dict) and 'domain' in item:
+            try:
+                domains.append(Domain(item['domain']))
+            except ValueError:
+                # Skip invalid domain names
+                continue
+    
+    return domains
+
+
+def parse_json_file(file_path: str) -> List[Domain]:
+    """
+    Parse a JSON file from collect command output and extract Domain objects.
+    
+    This is a convenience function that handles file reading and delegates
+    to parse_results() for the actual parsing. It supports ONLY the structured
+    JSON format produced by the collect command.
+    
+    Args:
+        file_path: Path to the JSON file to parse
+        
+    Returns:
+        List of Domain objects extracted from the file
+        
+    Raises:
+        FileNotFoundError: If the file doesn't exist
+        PermissionError: If the file can't be read
+        ValueError: If the file contains invalid JSON or wrong format
+        
+    Examples:
+        >>> domains = parse_json_file("results.json")
+        >>> len(domains)
+        42
+    """
+    try:
+        with open(file_path, 'r') as f:
+            json_data = f.read()
+        return parse_results(json_data)
+    except (FileNotFoundError, PermissionError):
+        # Re-raise file access errors as-is
+        raise
+    except Exception as e:
+        raise ValueError(f"Error parsing JSON file {file_path}: {e}")

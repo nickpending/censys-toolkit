@@ -90,6 +90,51 @@ source .venv/bin/activate       # Unix/Mac
 censyspy --help
 ```
 
+### Shell Integration (Optional)
+For convenience, you can create a shell function to run `censyspy` from anywhere. Add this to your `~/.zshrc` or `~/.bashrc`:
+
+```bash
+censyspy() {
+  local current_dir=$(pwd)
+  local args=()
+  
+  # Convert relative --output paths to absolute paths
+  while [[ $# -gt 0 ]]; do
+    if [[ "$1" == "--output" ]] && [[ $# -gt 1 ]]; then
+      args+=("$1")
+      shift
+      # Convert relative path to absolute
+      if [[ "$1" != /* ]]; then
+        args+=("$current_dir/$1")
+      else
+        args+=("$1")
+      fi
+    else
+      args+=("$1")
+    fi
+    shift
+  done
+  
+  cd /path/to/censys-toolkit  # Update this path
+  uv run censyspy "${args[@]}"
+  cd "$current_dir"
+}
+```
+
+**Important**: This function handles relative paths correctly. Without this fix, output files would be created in the project directory instead of your current working directory.
+
+Then reload your shell:
+```bash
+source ~/.zshrc  # or ~/.bashrc
+```
+
+Now you can run `censyspy` from any directory:
+```bash
+cd ~/Documents
+censyspy collect --domain example.com --output results.json
+# Creates results.json in ~/Documents (your current directory)
+```
+
 #### Standard Development Workflow
 
 The project uses a unified management script that standardizes common development tasks:
@@ -194,9 +239,13 @@ censyspy collect --data-type both --domain example.com --days 1 --output example
 censyspy collect --data-type certificate --domain example.com --format text --output domains.txt
 ```
 
-4. Update a master domain list:
+4. Update a master domain list (accepts both JSON and text files):
 ```bash
-censyspy update-master --source new_domains.txt --master master_domains.txt --mode append
+# From JSON output
+censyspy update-master --source results.json --master master_domains.txt --mode update
+
+# From text file  
+censyspy update-master --source new_domains.txt --master master_domains.txt --mode update
 ```
 
 Sample output:
