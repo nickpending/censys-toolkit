@@ -1,13 +1,94 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*-pytest-*.pyc
+.pytest_cache/
+.hypothesis/
+.tox/
+
 # Python build artifacts
 dist/
 build/
 *.egg-info/
 *.egg
-__pycache__/
-*.pyc
+.Python
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+cov.xml
+.coverage.*
+
+# Python type checking
+.mypy_cache/
+.pyright/
+.pytype/
+.ruff_cache/
+
+# UV package manager
+.uv/
+uv.lock
+
+# Archive directory (preserved old code)
+archive/
 
 # Environment files
 .env
-.venv
+.venv/
+.env.test
 env/
 venv/
+ENV/
+.python-version
+
+# IDE/Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+.ipynb_checkpoints/
+
+# Output and runtime data directories
+# Dynamic resource directories - these can be created anywhere
+output/
+masters/
+resources/
+results/
+# Except example directories in documentation
+!examples/output/
+!examples/masters/
+
+# Data files
+*.json
+*.csv
+*.txt
+*.db
+*.sqlite*
+
+# Logs
+logs/
+*.log
+
+# Claude integration
+.claude/
+
+# Development and template files
+*_TEMPLATE.md
+APP_CONTEXT*.md
+TARGET_ARCHITECTURE*.md
+TASK_LIST*.md
+CLAUDE*.md
+DESIGN_PRINCIPLES*.md
+IMPLEMENTATION_GUIDELINES*.md
+
+# Exceptions for project files
+!requirements*.txt
+!.env-example
+!pyproject.toml
+!README.md
+!CHANGELOG.md
+!RELEASE.md

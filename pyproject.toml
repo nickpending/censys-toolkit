@@ -1,0 +1,118 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "censys-toolkit"
+version = "1.0.0"
+description = "Command-line utilities for Censys API operations with domain discovery features"
+readme = "README.md"
+authors = [
+    {name = "nickpending", email = "rudy@voidwire.info"}
+]
+requires-python = ">=3.9"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "Topic :: Security",
+    "Topic :: Internet",
+    "Development Status :: 3 - Alpha",
+]
+keywords = ["censys", "security", "domains", "reconnaissance", "dns", "certificates"]
+dependencies = [
+    "censys>=2.2.16",
+    "python-dotenv>=1.0.1",
+    "click>=8.1.8",
+    "rich>=13.7.1",  # For improved terminal output
+    "pydantic>=2.10.6",  # For data validation
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=24.10.0",
+    "isort>=6.0.1",
+    "mypy>=1.15.0",
+    "pytest>=8.2.2",
+    "pytest-cov>=6.1.1",
+    "freezegun",
+]
+
+[project.urls]
+Homepage = "https://github.com/nickpending/censys-toolkit"
+Issues = "https://github.com/nickpending/censys-toolkit/issues"
+
+[project.scripts]
+censyspy = "censyspy.cli:main"
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | migrations
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["censyspy"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_optional = true
+
+[[tool.mypy.overrides]]
+module = ["censys.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["click.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+markers = [
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests",
+    "slow: marks tests as slow running",
+    "api: marks tests that interact with external APIs",
+]
+addopts = [
+    "--verbose",
+    "--color=yes",
+    "--cov=censyspy",
+    "--cov-report=term-missing",
+]
+# Log configuration
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+

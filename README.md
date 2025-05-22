@@ -4,24 +4,110 @@ Command-line utilities to support Censys reconnaissance and data gathering
 ## Overview
 This repository contains a collection of command-line utilities designed to extend and streamline Censys operations. Each tool is focused on specific use cases to help security researchers, penetration testers, and system administrators efficiently gather and analyze data from Censys.
 
+Currently, the project includes `censyspy`, a tool for discovering FQDNs using the Censys Search API through both DNS records and SSL/TLS certificates.
+
+The project follows a modular, maintainable architecture with clear separation of concerns between API interactions, business logic, and the command-line interface.
+
+## Project Structure
+
+```
+censys-toolkit/
+├── censyspy/                # Main package
+│   ├── __init__.py          # Package initialization
+│   ├── api.py               # API client functionality
+│   ├── cli.py               # Command-line interface
+│   ├── formatter.py         # Output formatting
+│   ├── masterlist.py        # Master list management
+│   ├── models.py            # Data models
+│   ├── processor.py         # Data processing logic
+│   └── utils.py             # Utility functions
+├── tests/                   # Tests mirror package structure
+├── pyproject.toml           # Project configuration
+├── scripts/                 # Development scripts
+└── README.md
+```
+
+The repository is organized according to a layered architecture pattern:
+- **API Layer**: Handles external API interactions, authentication, and raw data retrieval
+- **Processing Layer**: Processes data and implements business logic
+- **CLI Layer**: Provides command-line interface and user interaction
+- **Model Layer**: Defines structured data models with validation
+- **Formatter Layer**: Handles conversion of data to various output formats
+- **Utilities**: Provides cross-cutting functionality like logging
+- **Master List Management**: Tools for maintaining and updating domain lists
+
 ## Installation
 ### Requirements
-- Python 3.8 or higher
+- Python 3.9 or higher
 - Censys API credentials
-- python-dotenv
+
+### Dependencies
+- censys>=2.2.16 (Official Censys Python library)
+- python-dotenv>=1.0.1 (Environment variable management)
+- click>=8.1.8 (Command-line interface)
+- rich>=13.7.1 (Improved terminal output)
+- pydantic>=2.10.6 (Data validation)
+
+### Development Environment
+We standardize on [uv](https://github.com/astral-sh/uv) for Python package management and virtual environment handling, as it offers significant performance improvements and better dependency resolution:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/censys-toolkit.git
+git clone https://github.com/nickpending/censys-toolkit.git
 cd censys-toolkit
 ```
 
-2. Install dependencies:
+2. Set up development environment with uv:
 ```bash
-pip install -r requirements.txt
+# Install uv if you don't have it yet
+pip install uv
+
+# Use the management script to set up the environment
+./scripts/uv_manage.sh setup  # Create virtual environment and install dependencies
+./scripts/uv_manage.sh dev    # Install development dependencies
 ```
 
-3. Configure Censys credentials:
+3. Verify installation:
+```bash
+# Activate virtual environment
+# On Unix/Mac:
+source .venv/bin/activate
+# On Windows:
+.venv\Scripts\activate
+
+# Run the main application
+censyspy --help
+
+# Alternative: Use uv run without activating the environment
+uv run censyspy --help
+```
+
+#### Standard Development Workflow
+
+The project uses a unified management script that standardizes common development tasks:
+
+```bash
+# Available commands:
+./scripts/uv_manage.sh setup         # Create a virtual environment and install dependencies
+./scripts/uv_manage.sh dev           # Install development dependencies
+./scripts/uv_manage.sh update        # Update the lockfile with current dependencies
+./scripts/uv_manage.sh format        # Format code with black and isort
+./scripts/uv_manage.sh check         # Run type checking with mypy
+./scripts/uv_manage.sh test          # Run all tests
+./scripts/uv_manage.sh test unit     # Run only unit tests
+./scripts/uv_manage.sh test cov      # Run tests with coverage report
+./scripts/uv_manage.sh lint          # Run all linters and formatters
+./scripts/uv_manage.sh clean         # Clean build artifacts
+./scripts/uv_manage.sh build         # Build distribution packages
+```
+
+The project uses a lockfile (`uv.lock`) to ensure all developers have consistent dependencies. To update the lockfile after adding new dependencies to `pyproject.toml`:
+
+```bash
+./scripts/uv_manage.sh update
+```
+
+### API Credentials
 
 You can configure your Censys API credentials using either method:
 
@@ -43,70 +129,86 @@ export CENSYS_API_SECRET="your_api_secret"
 ```
 
 ## Tools
+
 ### censyspy
 A fast and efficient reconnaissance tool that discovers FQDNs using Censys Search API
 
 #### Features
 - Discovers FQDNs through both DNS records and SSL/TLS certificates
 - Combines forward and reverse DNS lookups
-- Outputs results in JSON format for easy parsing
+- Outputs results in multiple formats (JSON, text)
 - Configurable search depth and result limits
 - Flexible data collection timeframes (1, 3, 7 days, or all historical data)
-- Supports multiple credential configuration methods
+- Structured data models for consistent processing
 
-#### Usage
+#### CLI Usage
+
+**Collect domains:**
 ```bash
-censyspy --data-type both --domain example.com --output results.json
+censyspy collect --data-type both --domain example.com --output results.json
 ```
 
-#### Options
+**Update master lists:**
+```bash
+censyspy update-master --source domains.txt --master master_list.txt --mode update
 ```
- -h, --help                           show this help message and exit
+
+**Check version:**
+```bash
+censyspy version
+```
+
+#### Options for `collect` command
+```
  --data-type {dns,certificate,both}   Type of data to fetch
- --domain DOMAIN                      Domain to filter results (e.g., example.com)
- --days {1,3,7,all}                  Filter results by last update time (1, 3, 7 days, or all)
- --page-size PAGE_SIZE               Number of results per page (max 100)
- --max-pages MAX_PAGES               Maximum number of pages to process. Use -1 for all pages.
- --output OUTPUT                     Output file for JSON results
- --debug                            Enable debug mode
- --json                             Print full JSON output to console
+ --domain DOMAIN                      Domain to filter results (e.g., example.com) 
+ --days {1,3,7,all}                   Filter results by last update time
+ --page-size PAGE_SIZE                Number of results per page (default: 100)
+ --max-pages MAX_PAGES                Maximum number of pages to process (-1 for all)
+ --output OUTPUT                      Output file for results
+ --format {json,text}                 Output format
+ --debug                              Enable debug mode
 ```
 
 #### Examples
 1. Fetch complete historical dataset:
 ```bash
-censyspy --data-type both --domain example.com --days all --output example.com.json
+censyspy collect --data-type both --domain example.com --days all --output example.com.json
 ```
 
 2. Fetch only the last 24 hours of data:
 ```bash
-censyspy --data-type both --domain example.com --days 1 --output example.com-daily.json
+censyspy collect --data-type both --domain example.com --days 1 --output example.com-daily.json
 ```
 
-3. Fetch the last week of certificate data:
+3. Fetch certificate data as plain text:
 ```bash
-censyspy --data-type certificate --domain example.com --days 7 --output example.com-certs.json
+censyspy collect --data-type certificate --domain example.com --format text --output domains.txt
+```
+
+4. Update a master domain list:
+```bash
+censyspy update-master --source new_domains.txt --master master_domains.txt --mode append
 ```
 
 Sample output:
 ```
-Results written to example.com.json
-Collected data summary:
-DNS Data:
-1. www.example.com (forward)
-2. mail.example.com (forward)
-3. dev.example.com (forward)
-4. api.example.com (forward)
-5. test.example.com (forward)
-... and 5 more entries
+==================================================
+CENSYS SEARCH RESULTS SUMMARY
+==================================================
 
-CERTIFICATE Data:
-1. www.example.com (certificate)
-2. *.example.com (certificate)
-3. mail.example.com (certificate)
-4. example.com (certificate)
-5. api.example.com (certificate)
-... and 3 more entries
+STATISTICS:
+  Total unique domains: 5
+  DNS records: 3
+  Certificate records: 2
+
+SAMPLE DOMAINS:
+  1. example.com (dns) [93.184.216.34]
+  2. www.example.com (certificate)
+  3. api.example.com (dns) [93.184.216.34]
+
+==================================================
+Results saved to example.com.json
 ```
 
 ## Contributing
@@ -128,3 +230,24 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 Project Link: https://github.com/nickpending/censys-toolkit
+
+## Architecture
+
+The project follows a modular, layered architecture:
+
+- **API Layer** (`api.py`): Handles Censys API interactions with retry logic and error handling
+- **Processing Layer** (`processor.py`): Processes and filters domain data
+- **CLI Layer** (`cli.py`): Click-based command interface
+- **Data Models** (`models.py`): Structured domain entities with validation
+- **Formatters** (`formatter.py`): Multiple output formats (JSON, text)
+- **Master Lists** (`masterlist.py`): Domain list management and deduplication
+- **Utilities** (`utils.py`): Logging, file I/O, and helper functions
+
+Key features implemented:
+✅ Modular architecture with clear separation of concerns  
+✅ Structured data models with validation  
+✅ Click-based CLI with intuitive commands  
+✅ Multiple output formats (JSON, text)  
+✅ Master list management and deduplication  
+✅ Wildcard domain handling  
+✅ Comprehensive error handling and retry logic
