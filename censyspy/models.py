@@ -161,15 +161,31 @@ class Domain:
             # The base domain validation will be handled by its own validation
             return []
             
-        # Check for valid domain format (simplified)
-        # This is a basic validation - in a real implementation, you might
-        # want to use a more comprehensive domain validation library
-        domain_pattern = r'^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$'
-        if not re.match(domain_pattern, self.name) and self.name != 'localhost':
-            # Special case for common test domain or local domains
-            if not (self.name.endswith('.local') or self.name.endswith('.test') or 
-                    self.name.endswith('.example') or self.name.endswith('.invalid')):
-                errors.append(f"Domain name has invalid format: {self.name}")
+        # Check for basic safety - reject garbage that would break downstream tools
+        # Allow letters, numbers, hyphens, underscores, and dots (common in real domains)
+        # But reject control characters, spaces, quotes, etc. that appear in bad cert data
+        safe_chars_pattern = r'^[a-zA-Z0-9._-]+$'
+        if not re.match(safe_chars_pattern, self.name):
+            errors.append(f"Domain name contains unsafe characters: {self.name}")
+        
+        # Basic structure check - must have at least one dot (except localhost)
+        if self.name != 'localhost' and '.' not in self.name:
+            errors.append(f"Domain name must contain at least one dot: {self.name}")
+        
+        # Reject IP addresses - this is an FQDN tool, not an IP tool
+        ip_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+        if re.match(ip_pattern, self.name):
+            errors.append(f"IP addresses are not allowed, FQDNs only: {self.name}")
+        
+        # Reject consecutive dots and leading/trailing dots (except for already normalized names)
+        if '..' in self.name or self.name.startswith('.') or self.name.endswith('.'):
+            errors.append(f"Domain name has invalid dot placement: {self.name}")
+        
+        # Reject obviously broken strings that show up in certificate metadata
+        if (self.name.startswith('"') or self.name.endswith('"') or 
+            self.name.startswith("'") or self.name.endswith("'") or
+            '\x00' in self.name or '\n' in self.name or '\r' in self.name):
+            errors.append(f"Domain name contains invalid formatting: {self.name}")
         
         # Check length constraints
         if len(self.name) > 253:

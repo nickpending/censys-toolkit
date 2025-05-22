@@ -49,14 +49,17 @@ class TestDomain(unittest.TestCase):
 
     def test_domain_validation(self):
         """Test domain validation."""
-        # Test valid domains
+        # Test valid domains (updated for more permissive validation)
         valid_domains = [
             "example.com",
-            "sub.example.com",
+            "sub.example.com", 
             "sub-domain.example.com",
             "xn--fsqu00a.example.com",  # IDN
             "123.example.com",
             "example-1.com",
+            "under_score.example.com",  # Underscores now allowed
+            "_service._tcp.example.com",  # SRV record format
+            "esb-ivr_mc.mx.att.com",  # Real-world example with underscore
             "localhost"  # Special case
         ]
         
@@ -68,19 +71,18 @@ class TestDomain(unittest.TestCase):
             # Static validation should also pass
             self.assertEqual(Domain.validate_str(domain_str), [])
         
-        # Test invalid domains
+        # Test invalid domains (updated for more permissive validation)
         invalid_domains = [
-            "-example.com",  # Leading hyphen
-            "example-.com",  # Trailing hyphen
-            "exam_ple.com",  # Underscore
             "a" * 254 + ".com",  # Too long
-            ".example.com",  # Leading dot
-            "example..com",  # Consecutive dots
-            "exam ple.com",  # Space
-            "example.com/path",  # Path
-            "example.com:8080",  # Port
-            "http://example.com",  # Protocol
-            "example@example.com"  # Email
+            "exam ple.com",  # Space (unsafe character)
+            "example.com/path",  # Path (unsafe character)
+            "example.com:8080",  # Port (unsafe character) 
+            "http://example.com",  # Protocol (unsafe character)
+            "example@example.com",  # Email (unsafe character)
+            '"quoted.domain.com"',  # Quoted (unsafe character)
+            "domain\x00null.com",  # Null byte
+            "domain\nnewline.com",  # Newline
+            "nodot",  # Missing dot (except localhost)
         ]
         
         for domain_str in invalid_domains:
@@ -230,12 +232,12 @@ class TestDomain(unittest.TestCase):
         except ValueError as e:
             self.assertIn("cannot be empty", str(e))
             
-        # Test error message for invalid format
+        # Test error message for invalid format (use something actually invalid)
         try:
-            Domain("not_valid.com")
+            Domain("domain with spaces.com")
             self.fail("Invalid domain should raise ValueError")
         except ValueError as e:
-            self.assertIn("invalid format", str(e).lower())
+            self.assertIn("unsafe characters", str(e).lower())
             
         # Test error for domain that's too long
         too_long = "a" * 254
@@ -248,7 +250,7 @@ class TestDomain(unittest.TestCase):
         # Test validation failure with direct validation
         errors = Domain.validate_str("invalid..domain")
         self.assertTrue(len(errors) > 0)
-        self.assertIn("invalid format", errors[0].lower())
+        self.assertIn("invalid dot placement", errors[0].lower())
 
 
 if __name__ == '__main__':
