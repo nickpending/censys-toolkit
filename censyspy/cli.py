@@ -20,7 +20,7 @@ from importlib.metadata import version
 
 from censyspy.formatter import format_console_summary, format_results, normalize_format_type, parse_json_file
 from censyspy.integration import fetch_and_process_domains
-from censyspy.masterlist import read_master_list, update_master_list, UpdateMode
+from censyspy.masterlist import count_new_domains, deduplicate_domains, read_master_list, update_master_list, UpdateMode
 from censyspy.models import CertificateMatch, DNSMatch, Domain
 from censyspy.utils import configure_logging, is_valid_domain, is_valid_file_path, write_json_file, write_text_file
 
@@ -336,12 +336,12 @@ def update_master(
                 click.echo("Master list was not updated.", err=True)
             sys.exit(0)
             
+        # Count how many domains will be new before updating
+        new_count = count_new_domains(new_domains, master) if mode == "update" else len(deduplicate_domains(new_domains))
+        
         # Update the master list
         logger.info(f"Updating master list {master} with {len(new_domains)} domains in '{mode}' mode")
         updated_domains = update_master_list(master, new_domains, mode)
-        
-        # Report the results
-        new_count = len(updated_domains) - (len(read_master_list(master)) if os.path.exists(master) and mode == "update" else 0)
         if not quiet:
             click.echo(f"Master list updated successfully:")
             click.echo(f"  - Added {new_count} new domains")
