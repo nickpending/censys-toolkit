@@ -20,7 +20,7 @@ from importlib.metadata import version
 
 from censyspy.formatter import format_console_summary, format_results, normalize_format_type, parse_json_file
 from censyspy.integration import fetch_and_process_domains
-from censyspy.masterlist import count_new_domains, deduplicate_domains, read_master_list, update_master_list, UpdateMode
+from censyspy.masterlist import count_new_domains, deduplicate_domains, get_new_domains, read_master_list, update_master_list, UpdateMode
 from censyspy.models import CertificateMatch, DNSMatch, Domain
 from censyspy.utils import configure_logging, is_valid_domain, is_valid_file_path, write_json_file, write_text_file
 
@@ -254,12 +254,17 @@ def collect(
     default="update",
     help="Update mode: update (merge) or replace (overwrite)",
 )
+@click.option(
+    "--output-new",
+    help="Save new domains to this file (text format, one per line)",
+)
 @click.pass_context
 def update_master(
     ctx: click.Context,
     source: str,
     master: str,
     mode: str,
+    output_new: Optional[str],
 ) -> None:
     """
     Update a master domain list with new discoveries.
@@ -336,17 +341,46 @@ def update_master(
                 click.echo("Master list was not updated.", err=True)
             sys.exit(0)
             
-        # Count how many domains will be new before updating
-        new_count = count_new_domains(new_domains, master) if mode == "update" else len(deduplicate_domains(new_domains))
+        # Get the actual new domains before updating
+        net_new_domains = get_new_domains(new_domains, master) if mode == "update" else deduplicate_domains(new_domains)
+        new_count = len(net_new_domains)
         
         # Update the master list
         logger.info(f"Updating master list {master} with {len(new_domains)} domains in '{mode}' mode")
         updated_domains = update_master_list(master, new_domains, mode)
+        
+        # Save new domains to file if requested
+        if output_new and net_new_domains:
+            try:
+                # Sort domains for consistent output
+                sorted_new = sorted(net_new_domains, key=lambda d: d.name)
+                # Write one domain per line
+                with open(output_new, 'w') as f:
+                    for domain in sorted_new:
+                        f.write(f"{domain.name}\n")
+                logger.info(f"Saved {new_count} new domains to {output_new}")
+            except Exception as e:
+                logger.error(f"Failed to write new domains to {output_new}: {str(e)}")
+                if not quiet:
+                    click.echo(f"Warning: Failed to save new domains: {str(e)}", err=True)
+        
         if not quiet:
             click.echo(f"Master list updated successfully:")
             click.echo(f"  - Added {new_count} new domains")
             click.echo(f"  - Total domains in master list: {len(updated_domains)}")
             click.echo(f"  - Master list saved to: {master}")
+            
+            if output_new and net_new_domains:
+                click.echo(f"  - New domains saved to: {output_new}")
+            
+            # Show a sample of new domains if any
+            if net_new_domains:
+                sample_size = min(5, len(net_new_domains))
+                click.echo(f"\nSample of new domains (showing {sample_size} of {new_count}):")
+                for domain in sorted(net_new_domains, key=lambda d: d.name)[:sample_size]:
+                    click.echo(f"  - {domain.name}")
+                if new_count > sample_size:
+                    click.echo(f"  ... and {new_count - sample_size} more")
         
         logger.info(f"Master list update completed: {new_count} new domains, {len(updated_domains)} total")
     

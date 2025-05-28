@@ -206,6 +206,11 @@ censyspy collect --data-type both --domain example.com --output results.json
 censyspy update-master --source domains.txt --master master_list.txt --mode update
 ```
 
+**Export net-new domains:**
+```bash
+censyspy update-master --source domains.txt --master master_list.txt --output-new new-discoveries.txt
+```
+
 **Check version:**
 ```bash
 censyspy version
@@ -246,6 +251,9 @@ censyspy update-master --source results.json --master master_domains.txt --mode 
 
 # From text file  
 censyspy update-master --source new_domains.txt --master master_domains.txt --mode update
+
+# Export only net-new domains for daily workflow
+censyspy update-master --source daily-scan.json --master master_domains.txt --output-new new-today.txt
 ```
 
 Sample output:
@@ -266,6 +274,23 @@ SAMPLE DOMAINS:
 
 ==================================================
 Results saved to example.com.json
+```
+
+Sample update-master output with new domain tracking:
+```
+Master list updated successfully:
+  - Added 47 new domains
+  - Total domains in master list: 243410
+  - Master list saved to: master_domains.txt
+  - New domains saved to: new-today.txt
+
+Sample of new domains (showing 5 of 47):
+  - api.newservice.example.com
+  - cdn.example.com
+  - mail2.example.com
+  - staging.example.com
+  - test-env.example.com
+  ... and 42 more
 ```
 
 ## Contributing

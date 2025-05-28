@@ -273,3 +273,34 @@ def count_new_domains(
     difference = domain_set_difference(unique_domains, existing_domains)
     
     return len(difference)
+
+
+def get_new_domains(
+    new_domains: List[Domain], 
+    master_list_path: str
+) -> List[Domain]:
+    """
+    Get the list of domains that would be added to the master list.
+    
+    This function identifies which new domains are not already
+    in the master list, without actually updating the list.
+    
+    Args:
+        new_domains: List of Domain objects to check
+        master_list_path: Path to the master list file
+        
+    Returns:
+        List of Domain objects that would be added
+    """
+    # If master list doesn't exist, all domains are new
+    if not os.path.exists(master_list_path):
+        return deduplicate_domains(new_domains)
+    
+    # Read the existing master list
+    existing_domains = read_master_list(master_list_path)
+    
+    # Deduplicate the new domains first
+    unique_domains = deduplicate_domains(new_domains)
+    
+    # Find domains that are in unique_domains but not in existing_domains
+    return domain_set_difference(unique_domains, existing_domains)
