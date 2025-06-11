@@ -169,11 +169,16 @@ def process_dns_result(
     for name in dns_data.get("names", []):
         matched_hostname = is_domain_match(name, domain)
         if matched_hostname:
+            # Validate hostname before creating Domain object
+            try:
+                hostname_obj = Domain(matched_hostname)
+            except ValueError as e:
+                # Skip invalid domains but log the issue
+                logger.warning(f"Skipping invalid domain '{matched_hostname}': {str(e)}")
+                continue
+                
             # Create or update entry in collected data
             if matched_hostname not in collected_data:
-                # Create Domain object from the matched hostname
-                hostname_obj = Domain(matched_hostname)
-                
                 # Create a new DNSMatch with the forward record type
                 dns_match = DNSMatch(
                     hostname=hostname_obj,
@@ -201,11 +206,16 @@ def process_dns_result(
     for name in dns_data.get("reverse_dns", {}).get("names", []):
         matched_hostname = is_domain_match(name, domain)
         if matched_hostname:
+            # Validate hostname before creating Domain object
+            try:
+                hostname_obj = Domain(matched_hostname)
+            except ValueError as e:
+                # Skip invalid domains but log the issue
+                logger.warning(f"Skipping invalid domain '{matched_hostname}': {str(e)}")
+                continue
+                
             # Create or update entry in collected data
             if matched_hostname not in collected_data:
-                # Create Domain object from the matched hostname
-                hostname_obj = Domain(matched_hostname)
-                
                 # Create a new DNSMatch with the reverse record type
                 dns_match = DNSMatch(
                     hostname=hostname_obj,
@@ -274,11 +284,16 @@ def process_cert_result(
     for name in result.get("names", []):
         matched_hostname = is_domain_match(name, domain)
         if matched_hostname:
+            # Validate hostname before creating Domain object
+            try:
+                hostname_obj = Domain(matched_hostname)
+            except ValueError as e:
+                # Skip invalid domains but log the issue
+                logger.warning(f"Skipping invalid domain '{matched_hostname}': {str(e)}")
+                continue
+                
             # Create or update entry in collected data
             if matched_hostname not in collected_data:
-                # Create Domain object from the matched hostname
-                hostname_obj = Domain(matched_hostname)
-                
                 # Create a new CertificateMatch with appropriate data
                 cert_match = CertificateMatch(
                     hostname=hostname_obj,
