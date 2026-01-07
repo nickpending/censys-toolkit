@@ -20,6 +20,7 @@ coverage.xml
 *.cover
 cov.xml
 .coverage.*
+setup.py
 
 # Python type checking
 .mypy_cache/
@@ -67,6 +68,11 @@ results/
 *.txt
 *.db
 *.sqlite*
+
+# Temporary files
+*.tmp
+*.bak
+foo*.txt
 
 # Logs
 logs/
