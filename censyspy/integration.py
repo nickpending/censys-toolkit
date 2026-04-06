@@ -196,6 +196,8 @@ def _process_api_results(
     """
     dns_results = []
     cert_results = []
+    dns_failed = False
+    cert_failed = False
 
     # Fetch DNS data if requested
     if data_type in ["dns", "both"]:
@@ -213,6 +215,7 @@ def _process_api_results(
             )
             logger.info(f"Fetched {len(dns_results)} DNS results")
         except Exception as e:
+            dns_failed = True
             if data_type == "both":
                 logger.warning(
                     f"DNS fetch failed, continuing with certificate data only: {e}"
@@ -236,6 +239,7 @@ def _process_api_results(
             )
             logger.info(f"Fetched {len(cert_results)} certificate results")
         except Exception as e:
+            cert_failed = True
             if data_type == "both":
                 logger.warning(
                     f"Certificate fetch failed, continuing with DNS data only: {e}"
@@ -243,7 +247,7 @@ def _process_api_results(
             else:
                 raise
 
-    if data_type == "both" and not dns_results and not cert_results:
+    if data_type == "both" and dns_failed and cert_failed:
         raise RuntimeError(f"Both DNS and certificate fetches failed for {domain}")
 
     return dns_results, cert_results
